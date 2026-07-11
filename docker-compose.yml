@@ -1,0 +1,106 @@
+name: lazyfish-assistant
+
+services:
+  lazyfish-assistant:
+    image: ${APP_IMAGE:-ghcr.io/houtx/lazyfish-assistant-public}:${IMAGE_TAG:-latest}
+    init: true
+    user: "10001:10001"
+    restart: unless-stopped
+    stop_grace_period: 30s
+    ports:
+      - "${APP_BIND_HOST:-127.0.0.1}:${APP_PORT:-9000}:8090"
+    volumes:
+      - lazyfish-data:/app/data
+      - lazyfish-logs:/app/logs
+      - lazyfish-backups:/app/backups
+      - lazyfish-browser-data:/app/browser_data
+      - lazyfish-trajectory-history:/app/trajectory_history
+      - lazyfish-uploads:/app/static/uploads
+      - ./global_config.yml:/app/global_config.yml:ro
+    environment:
+      PRODUCT_ID: ${PRODUCT_ID:-lazyfish-assistant}
+      PRODUCT_NAME: ${PRODUCT_NAME:-懒鱼助手}
+      PRODUCT_SHORT_NAME: ${PRODUCT_SHORT_NAME:-懒鱼}
+      PRODUCT_TAGLINE: ${PRODUCT_TAGLINE:-二手电商运营管理工具}
+      PRODUCT_LOGO_URL: ${PRODUCT_LOGO_URL:-/static/brand-logo.svg}
+      PRODUCT_VENDOR: ${PRODUCT_VENDOR:-独立软件发行版}
+      PRODUCT_SUPPORT_URL: ${PRODUCT_SUPPORT_URL:-}
+      PRODUCT_SUPPORT_EMAIL: ${PRODUCT_SUPPORT_EMAIL:-}
+      PRODUCT_SOURCE_URL: ${PRODUCT_SOURCE_URL:-https://github.com/Houtx/lazyfish-assistant-public/blob/main/SOURCE.md}
+      API_HOST: 0.0.0.0
+      API_PORT: 8090
+      DB_PATH: /app/data/xianyu_data.db
+      BACKUP_DIR: /app/backups
+      TZ: ${TZ:-Asia/Shanghai}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      LOG_DIR: /app/logs
+      SQL_LOG_ENABLED: ${SQL_LOG_ENABLED:-false}
+      SQL_LOG_LEVEL: ${SQL_LOG_LEVEL:-INFO}
+      SECRET_ENCRYPTION_KEY: ${SECRET_ENCRYPTION_KEY:-}
+      LICENSE_REQUIRED: ${LICENSE_REQUIRED:-true}
+      LICENSE_SERVER_URL: ${LICENSE_SERVER_URL:-}
+      LICENSE_KEY: ${LICENSE_KEY:-}
+      LICENSE_PUBLIC_KEY_PATH: /app/release/license_public_key.pem
+      LICENSE_DATA_DIR: /app/data
+      LICENSE_REFRESH_SECONDS: ${LICENSE_REFRESH_SECONDS:-900}
+      LICENSE_OFFLINE_GRACE_SECONDS: ${LICENSE_OFFLINE_GRACE_SECONDS:-86400}
+      INITIAL_ADMIN_PASSWORD: ${INITIAL_ADMIN_PASSWORD:-}
+      INITIAL_ADMIN_PASSWORD_FILE: ${INITIAL_ADMIN_PASSWORD_FILE:-}
+      SEND_MESSAGE_API_KEY: ${SEND_MESSAGE_API_KEY:-}
+      SEND_MESSAGE_API_KEY_FILE: ${SEND_MESSAGE_API_KEY_FILE:-}
+      CAPTCHA_REMOTE_ENABLED: ${CAPTCHA_REMOTE_ENABLED:-false}
+      CAPTCHA_REMOTE_TOKEN: ${CAPTCHA_REMOTE_TOKEN:-}
+      OUTBOUND_ALLOWED_ORIGINS: ${OUTBOUND_ALLOWED_ORIGINS:-}
+      YIFAN_API_URL: ${YIFAN_API_URL:-}
+      YIFAN_CALLBACK_URL: ${YIFAN_CALLBACK_URL:-}
+      YIFAN_QUERY_URL: ${YIFAN_QUERY_URL:-}
+      SIGNED_UPDATE_CHECK_ENABLED: ${SIGNED_UPDATE_CHECK_ENABLED:-false}
+      UPDATE_CHANNEL: ${UPDATE_CHANNEL:-beta}
+      UPDATE_MANIFEST_URL: ${UPDATE_MANIFEST_URL:-}
+      UPDATE_SIGNATURE_URL: ${UPDATE_SIGNATURE_URL:-}
+      UPDATE_PUBLIC_KEY_PATH: /app/release/update_public_key.pem
+      USE_XVFB: ${USE_XVFB:-true}
+      ENABLE_HEADFUL: ${ENABLE_HEADFUL:-true}
+      ENABLE_VNC: "false"
+      MESSAGE_STREAM_WATCHDOG_TIMEOUT: ${MESSAGE_STREAM_WATCHDOG_TIMEOUT:-3600}
+      MESSAGE_STREAM_WATCHDOG_BASE_COOLDOWN: ${MESSAGE_STREAM_WATCHDOG_BASE_COOLDOWN:-1800}
+      MESSAGE_STREAM_WATCHDOG_MAX_COOLDOWN: ${MESSAGE_STREAM_WATCHDOG_MAX_COOLDOWN:-21600}
+      ACCOUNT_RESTART_INITIAL_DELAY: ${ACCOUNT_RESTART_INITIAL_DELAY:-5}
+      ACCOUNT_RESTART_MAX_DELAY: ${ACCOUNT_RESTART_MAX_DELAY:-300}
+      ACCOUNT_RESTART_STABLE_SECONDS: ${ACCOUNT_RESTART_STABLE_SECONDS:-600}
+      SELF_HEAL_MEMORY_THRESHOLD: ${SELF_HEAL_MEMORY_THRESHOLD:-90}
+      SELF_HEAL_PLAYWRIGHT_DRIVER_LIMIT: ${SELF_HEAL_PLAYWRIGHT_DRIVER_LIMIT:-12}
+      SELF_HEAL_ZOMBIE_LIMIT: ${SELF_HEAL_ZOMBIE_LIMIT:-30}
+      SELF_HEAL_CHECK_INTERVAL: ${SELF_HEAL_CHECK_INTERVAL:-60}
+      SELF_HEAL_CONSECUTIVE_FAILURES: ${SELF_HEAL_CONSECUTIVE_FAILURES:-3}
+      SELF_HEAL_STARTUP_GRACE: ${SELF_HEAL_STARTUP_GRACE:-120}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-7}
+      SLIDER_DEBUG_RETENTION_DAYS: ${SLIDER_DEBUG_RETENTION_DAYS:-7}
+      MAINTENANCE_CHECK_INTERVAL: ${MAINTENANCE_CHECK_INTERVAL:-3600}
+    tmpfs:
+      - /tmp:rw,nosuid,nodev,size=512m
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    shm_size: ${SHM_SIZE:-1gb}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8090/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: ${CONTAINER_LOG_MAX_SIZE:-10m}
+        max-file: ${CONTAINER_LOG_MAX_FILES:-3}
+
+volumes:
+  lazyfish-data:
+  lazyfish-logs:
+  lazyfish-backups:
+  lazyfish-browser-data:
+  lazyfish-trajectory-history:
+  lazyfish-uploads:

@@ -1,0 +1,21 @@
+LazyFish Assistant (懒鱼助手)
+
+Commercial-edition modifications Copyright (C) 2026 Houtx.
+
+Based on xianyu-auto-reply-fix, Copyright (C) 2026 GuDong and contributors.
+Portions are based on xianyu-auto-reply, Copyright (c) 2025 肥极喵,
+originally provided under the MIT License.
+
+The combined work is distributed under GNU AGPL version 3 only. Historical
+copyright and permissive-license notices remain applicable to their respective
+portions. See LICENSE, docs/OPEN_SOURCE.md, and
+docs/THIRD_PARTY_NOTICES.md.
+
+The commercial edition introduced product branding, hardened deployment,
+release verification, configuration isolation, documentation, and security
+changes in July 2026. Git history and release notes contain the detailed
+modification record.
+
+LazyFish Assistant is an independent product. It is not an official Xianyu
+product and is not affiliated with or endorsed by Xianyu or Alibaba Group.
+Third-party trademarks remain the property of their respective owners.
