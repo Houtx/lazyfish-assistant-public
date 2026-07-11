@@ -52,7 +52,7 @@ docker inspect lazyfish-assistant-lazyfish-assistant-1 \
 遇到兼容问题时，在 `.env` 中把 `IMAGE_TAG` 改成先前的精确版本，例如：
 
 ```dotenv
-IMAGE_TAG=2.1.0
+IMAGE_TAG=2.1.1
 ```
 
 然后重新执行 `docker compose pull` 和 `docker compose up -d`。不要执行 `docker compose down -v`，该命令会删除客户数据卷。
