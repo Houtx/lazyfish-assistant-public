@@ -1,4 +1,7 @@
 .env
 secrets/
 backup/
+dist/
+__pycache__/
+*.pyc
 *.log

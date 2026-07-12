@@ -1,0 +1,108 @@
+name: Publish customer deployment kits
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-deployment-kits.yml"
+      - ".env.example"
+      - ".gitattributes"
+      - "docker-compose.yml"
+      - "global_config.yml"
+      - "scripts/**"
+      - "*.bat"
+      - "*.command"
+      - "客户使用说明.txt"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-deployment-kits
+  cancel-in-progress: true
+
+jobs:
+  validate-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout distribution files
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Validate Windows entry points
+        shell: powershell
+        run: |
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "scripts/lazyfish-windows.ps1"),
+            [ref]$null,
+            [ref]$errors
+          ) > $null
+          if ($errors.Count -gt 0) {
+            $errors | Format-List
+            exit 1
+          }
+
+          $required = @(
+            "安装或更新懒鱼助手.bat",
+            "启动懒鱼助手.bat",
+            "停止懒鱼助手.bat"
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) {
+              throw "Missing Windows entry point: $path"
+            }
+          }
+
+          $bytes = [System.IO.File]::ReadAllBytes("scripts/lazyfish-windows.ps1")
+          if ($bytes[0] -ne 0xEF -or $bytes[1] -ne 0xBB -or $bytes[2] -ne 0xBF) {
+            throw "lazyfish-windows.ps1 must use a UTF-8 BOM for Windows PowerShell 5.1"
+          }
+
+  package:
+    needs: validate-windows
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout distribution files
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate scripts
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash -n scripts/lazyfish-macos.sh
+          bash -n scripts/build-deployment-kits.sh
+          bash -n ./*.command
+          python3 -m py_compile scripts/create-deployment-zip.py
+          if grep -R -n -E 'docker compose down -v|compose down -v|volume rm' \
+              scripts ./*.bat ./*.command; then
+            echo "Destructive Docker command found" >&2
+            exit 1
+          fi
+
+      - name: Build Windows and macOS ZIP files
+        shell: bash
+        run: scripts/build-deployment-kits.sh dist
+
+      - name: Publish stable download links
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="installer-latest"
+          git tag --force "$tag" "$GITHUB_SHA"
+          git push origin "refs/tags/$tag" --force
+
+          notes="面向普通客户的懒鱼助手一键部署包。解压后双击对应系统的‘安装或更新懒鱼助手’脚本即可。首次使用前需要安装并启动 Docker Desktop。"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release edit "$tag" --title "懒鱼助手一键部署包" --notes "$notes" --latest
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* \
+              --title "懒鱼助手一键部署包" \
+              --notes "$notes" \
+              --latest
+          fi

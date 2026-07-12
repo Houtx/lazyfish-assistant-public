@@ -4,7 +4,20 @@
 
 > 非闲鱼官方产品，与闲鱼及阿里巴巴集团无隶属、合作或授权关系。使用者应遵守适用法律和平台规则。
 
-## 快速安装
+## 一键安装（推荐）
+
+客户不需要安装 Git，也不需要输入 Docker 命令。下载对应系统的部署包并完整解压：
+
+- [Windows 一键部署包](https://github.com/Houtx/lazyfish-assistant-public/releases/download/installer-latest/lazyfish-assistant-windows.zip)
+- [macOS 一键部署包](https://github.com/Houtx/lazyfish-assistant-public/releases/download/installer-latest/lazyfish-assistant-macos.zip)
+
+Windows 双击 `安装或更新懒鱼助手.bat`；macOS 首次运行时右键点击 `安装或更新懒鱼助手.command` 并选择“打开”。脚本会自动生成配置、拉取稳定版 `latest`、启动服务并打开浏览器。以后再次运行同一个脚本就是更新。
+
+电脑必须先安装并启动 [Docker Desktop](https://www.docker.com/products/docker-desktop/)。Docker Desktop 的首次安装需要客户确认系统权限，无法由普通脚本完全静默代办；脚本检测到未安装时会自动打开官方下载页。
+
+部署包同时提供“启动懒鱼助手”和“停止懒鱼助手”入口。停止操作不会删除客户数据。
+
+## 命令行安装（技术人员）
 
 要求 Docker Engine 24+ 和 Docker Compose v2。
 
