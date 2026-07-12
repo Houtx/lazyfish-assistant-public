@@ -5,7 +5,7 @@ readonly PRODUCT_NAME="懒鱼助手"
 readonly INSTALL_DIR="${LAZYFISH_INSTALL_DIR:-/opt/lazyfish-assistant}"
 readonly COMPOSE_FILE="$INSTALL_DIR/docker-compose.yml"
 readonly ENV_FILE="$INSTALL_DIR/.env"
-readonly COMMAND_PATH="/usr/local/bin/lazyfish-assistant"
+readonly COMMAND_PATH="${LAZYFISH_COMMAND_PATH:-/usr/local/bin/lazyfish-assistant}"
 readonly REPOSITORY="Houtx/lazyfish-assistant-public"
 readonly BRANCH="main"
 readonly ACTION="${1:-deploy}"
@@ -293,37 +293,43 @@ require_existing_install() {
   configure_app_url
 }
 
-require_root
-detect_platform
-install_base_tools
-install_docker
-start_docker
-install_compose_plugin
-install_command
+main() {
+  require_root
+  detect_platform
+  install_base_tools
+  install_docker
+  start_docker
+  install_compose_plugin
+  install_command
 
-case "$ACTION" in
-  deploy|install|update) deploy ;;
-  start)
-    require_existing_install
-    compose up -d lazyfish-assistant
-    wait_for_app
-    compose ps
-    show_initial_password
-    show_access_info
-    ;;
-  stop)
-    require_existing_install
-    info "正在停止服务，客户数据不会被删除..."
-    compose stop lazyfish-assistant
-    compose ps
-    ;;
-  status)
-    require_existing_install
-    compose ps
-    ;;
-  logs)
-    require_existing_install
-    compose logs --tail 200 -f lazyfish-assistant
-    ;;
-  *) fail "未知操作：$ACTION。可用操作：update、start、stop、status、logs。" ;;
-esac
+  case "$ACTION" in
+    deploy|install|update) deploy ;;
+    start)
+      require_existing_install
+      compose up -d lazyfish-assistant
+      wait_for_app
+      compose ps
+      show_initial_password
+      show_access_info
+      ;;
+    stop)
+      require_existing_install
+      info "正在停止服务，客户数据不会被删除..."
+      compose stop lazyfish-assistant
+      compose ps
+      ;;
+    status)
+      require_existing_install
+      compose ps
+      ;;
+    logs)
+      require_existing_install
+      compose logs --tail 200 -f lazyfish-assistant
+      ;;
+    *) fail "未知操作：$ACTION。可用操作：update、start、stop、status、logs。" ;;
+  esac
+}
+
+if [[ "${LAZYFISH_INSTALLER_LIBRARY_MODE:-0}" != "1" ]]; then
+  main "$@"
+fi
