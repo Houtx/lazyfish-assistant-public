@@ -28,12 +28,34 @@ macOS
 4. 在页面输入卖家提供的授权码。
 5. 激活后使用登录页显示的 admin 初始密码登录，并按提示设置新密码。
 
+Linux 云服务器
+--------------
+1. 使用 SSH 登录云服务器。
+2. 复制下面一整行命令并执行，不需要下载或解压安装包：
+
+   curl -fsSL https://lazyfish.haoyunqiankun.com/install.sh | sudo bash
+
+3. 脚本会自动安装 Docker、选择 9000-9099 中的可用端口、拉取最新稳定版并启动。
+4. 根据脚本最后显示的端口，在云厂商安全组中放行对应的 TCP 端口。
+5. 打开脚本显示的公网地址，输入卖家提供的授权码完成激活。
+
+以后再次执行同一句命令就是更新，不会删除授权、配置或业务数据。
+
+Linux 常用命令
+-------------
+- 安装或更新：sudo lazyfish-assistant update
+- 启动：sudo lazyfish-assistant start
+- 停止：sudo lazyfish-assistant stop
+- 查看状态：sudo lazyfish-assistant status
+- 查看日志：sudo lazyfish-assistant logs
+
 日常使用
 --------
 - 安装和更新：双击“安装或更新懒鱼助手”。
 - 只启动、不更新：双击“启动懒鱼助手”。
 - 临时停止：双击“停止懒鱼助手”。
-- 访问地址：http://127.0.0.1:9000
+- Windows/macOS 访问地址：http://127.0.0.1:9000
+- Linux 访问地址：以安装脚本最后显示的公网地址为准
 
 如果端口 9000 已被其他软件占用，首次安装会自动选择 9001-9099 中的可用端口，实际地址会显示在安装窗口中。
 
