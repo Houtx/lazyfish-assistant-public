@@ -2,6 +2,8 @@
 
 懒鱼助手整体按照 GNU Affero General Public License v3.0（`AGPL-3.0-only`）提供。每个公开 Docker 镜像都在 `/app` 中包含与该镜像版本对应的源代码和构建材料，包括 Python 源文件、Dockerfile、依赖锁定文件、配置、前端资源及发布脚本。
 
+产品介绍、安装流程和官方下载入口请访问[懒鱼助手官网](https://lazyfish.haoyunqiankun.com/)；本页专门说明如何获取运行版本对应的源代码。
+
 ## 从精确版本镜像提取
 
 将 `VERSION` 替换为正在使用的精确版本：
