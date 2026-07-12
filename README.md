@@ -32,17 +32,7 @@ docker compose ps
 
 默认访问地址：<http://127.0.0.1:9000>。
 
-首次启动后打开页面输入购买时收到的授权码。未设置管理员密码时，可以读取系统生成的一次性密码：
-
-```bash
-docker compose exec lazyfish-assistant cat /app/data/.initial_admin_password
-```
-
-登录后立即修改密码并删除提示文件：
-
-```bash
-docker compose exec lazyfish-assistant rm -f /app/data/.initial_admin_password
-```
+首次启动后打开页面输入购买时收到的授权码。激活成功后，登录页会直接显示 `admin` 和随机生成的初始密码；首次登录必须设置新密码。忘记密码时，可在登录页使用当前安装绑定的有效授权码生成临时密码。
 
 ## 更新
 
@@ -65,7 +55,7 @@ docker inspect lazyfish-assistant-lazyfish-assistant-1 \
 遇到兼容问题时，在 `.env` 中把 `IMAGE_TAG` 改成先前的精确版本，例如：
 
 ```dotenv
-IMAGE_TAG=2.1.1
+IMAGE_TAG=2.1.2
 ```
 
 然后重新执行 `docker compose pull` 和 `docker compose up -d`。不要执行 `docker compose down -v`，该命令会删除客户数据卷。

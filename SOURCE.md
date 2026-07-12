@@ -7,7 +7,7 @@
 将 `VERSION` 替换为正在使用的精确版本：
 
 ```bash
-VERSION=2.1.1
+VERSION=2.1.2
 docker pull "ghcr.io/houtx/lazyfish-assistant-public:${VERSION}"
 docker create --name lazyfish-source "ghcr.io/houtx/lazyfish-assistant-public:${VERSION}"
 docker cp lazyfish-source:/app "./lazyfish-assistant-${VERSION}-source"
