@@ -144,10 +144,14 @@ install_compose_plugin() {
 }
 
 install_command() {
-  local source_path="${BASH_SOURCE[0]:-}"
-  if [[ -n "$source_path" && -f "$source_path" ]]; then
-    install -m 0755 "$source_path" "$COMMAND_PATH"
-  fi
+  local source_path="${BASH_SOURCE[0]:-}" source_real target_real
+  [[ -n "$source_path" && -f "$source_path" ]] || return
+
+  source_real="$(readlink -f "$source_path")"
+  target_real="$(readlink -f "$COMMAND_PATH" 2>/dev/null || true)"
+  [[ -n "$target_real" && "$source_real" == "$target_real" ]] && return
+
+  install -m 0755 "$source_path" "$COMMAND_PATH"
 }
 
 download_runtime_files() {
@@ -261,7 +265,7 @@ show_access_info() {
   else
     info "部署完成，请使用服务器公网 IP 和端口 $APP_PORT 访问。"
   fi
-  warn "请在云厂商安全组中放行 TCP 端口 $APP_PORT；安装器不会自动修改安全组或系统防火墙。"
+  warn "请仅对可信 IP 放行 TCP 端口 $APP_PORT，并同步检查云安全组与系统防火墙；生产使用建议配置 HTTPS 反向代理。"
   printf '\n常用命令：\n'
   printf '  sudo lazyfish-assistant          安装或更新\n'
   printf '  sudo lazyfish-assistant start    启动\n'
