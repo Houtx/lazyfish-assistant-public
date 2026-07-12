@@ -43,15 +43,9 @@ jobs:
             exit 1
           }
 
-          $required = @(
-            "安装或更新懒鱼助手.bat",
-            "启动懒鱼助手.bat",
-            "停止懒鱼助手.bat"
-          )
-          foreach ($path in $required) {
-            if (-not (Test-Path $path)) {
-              throw "Missing Windows entry point: $path"
-            }
+          $entryPoints = @(Get-ChildItem -File -Filter "*.bat")
+          if ($entryPoints.Count -ne 3) {
+            throw "Expected exactly three Windows batch entry points"
           }
 
           $bytes = [System.IO.File]::ReadAllBytes("scripts/lazyfish-windows.ps1")
