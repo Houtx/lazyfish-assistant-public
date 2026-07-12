@@ -24,7 +24,7 @@ services:
       PRODUCT_TAGLINE: ${PRODUCT_TAGLINE:-二手电商运营管理工具}
       PRODUCT_LOGO_URL: ${PRODUCT_LOGO_URL:-/static/brand-logo.svg}
       PRODUCT_VENDOR: ${PRODUCT_VENDOR:-独立软件发行版}
-      PRODUCT_SUPPORT_URL: ${PRODUCT_SUPPORT_URL:-}
+      PRODUCT_SUPPORT_URL: ${PRODUCT_SUPPORT_URL:-https://lazyfish.haoyunqiankun.com/}
       PRODUCT_SUPPORT_EMAIL: ${PRODUCT_SUPPORT_EMAIL:-}
       PRODUCT_SOURCE_URL: ${PRODUCT_SOURCE_URL:-https://github.com/Houtx/lazyfish-assistant-public/blob/main/SOURCE.md}
       API_HOST: 0.0.0.0

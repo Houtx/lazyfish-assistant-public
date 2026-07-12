@@ -2,7 +2,15 @@
 
 懒鱼助手是面向二手电商卖家的自托管运营管理工具。本仓库提供公开 Docker 镜像的安装、更新和对应源码获取说明。
 
+[产品官网](https://lazyfish.haoyunqiankun.com/) · [Windows 一键部署包](https://github.com/Houtx/lazyfish-assistant-public/releases/download/installer-latest/lazyfish-assistant-windows.zip) · [macOS 一键部署包](https://github.com/Houtx/lazyfish-assistant-public/releases/download/installer-latest/lazyfish-assistant-macos.zip) · [获取对应源码](SOURCE.md)
+
 > 非闲鱼官方产品，与闲鱼及阿里巴巴集团无隶属、合作或授权关系。使用者应遵守适用法律和平台规则。
+
+## 官网与仓库
+
+- [懒鱼助手官网](https://lazyfish.haoyunqiankun.com/)提供产品功能、数据与授权说明、安装流程及官方下载入口；授权购买入口开放后也将以官网展示的信息为准。
+- 本仓库用于发布一键部署文件、公开 Docker 镜像、版本更新说明和 AGPL 对应源码，不是闲鱼官方仓库或在线 SaaS 服务。
+- 授权码应通过官网后续公布的购买入口或卖家正式上架渠道获取。不要向第三方提供授权码、Cookie、管理员密码或业务数据。
 
 ## 一键安装（推荐）
 
