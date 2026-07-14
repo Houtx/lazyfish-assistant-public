@@ -4,6 +4,7 @@ set -Eeuo pipefail
 readonly PRODUCT_NAME="懒鱼助手"
 readonly INSTALL_DIR="${LAZYFISH_INSTALL_DIR:-/opt/lazyfish-assistant}"
 readonly COMPOSE_FILE="$INSTALL_DIR/docker-compose.yml"
+readonly VNC_COMPOSE_FILE="$INSTALL_DIR/docker-compose.vnc.yml"
 readonly ENV_FILE="$INSTALL_DIR/.env"
 readonly COMMAND_PATH="${LAZYFISH_COMMAND_PATH:-/usr/local/bin/lazyfish-assistant}"
 readonly REPOSITORY="Houtx/lazyfish-assistant-public"
@@ -12,6 +13,9 @@ readonly ACTION="${1:-deploy}"
 
 APP_PORT=""
 APP_URL=""
+NOVNC_URL=""
+NOVNC_PORT_VALUE=""
+VNC_PASSWORD_PATH=""
 PUBLIC_IP=""
 OS_FAMILY=""
 
@@ -159,6 +163,7 @@ download_runtime_files() {
   info "正在同步部署配置..."
   download_repository_file ".env.example" "$INSTALL_DIR/.env.example"
   download_repository_file "docker-compose.yml" "$COMPOSE_FILE"
+  download_repository_file "docker-compose.vnc.yml" "$VNC_COMPOSE_FILE"
   download_repository_file "global_config.yml" "$INSTALL_DIR/global_config.yml"
 }
 
@@ -213,6 +218,65 @@ read_env_value() {
   awk -F= -v key="$key" 'index($0, key "=") == 1 {sub(/^[^=]*=/, ""); gsub(/\r$/, ""); print; exit}' "$ENV_FILE"
 }
 
+append_env_default() {
+  local key="$1" value="$2"
+  if awk -F= -v key="$key" 'index($0, key "=") == 1 {found = 1; exit} END {exit !found}' "$ENV_FILE"; then
+    return
+  fi
+  printf '\n%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+  chmod 0600 "$ENV_FILE"
+}
+
+migrate_vnc_env_defaults() {
+  local novnc_port
+  append_env_default "VNC_PASSWORD_FILE" "./secrets/vnc_password.txt"
+  append_env_default "NOVNC_PORT" "6080"
+  novnc_port="$(read_env_value NOVNC_PORT)"
+  append_env_default \
+    "MANUAL_VERIFICATION_URL" \
+    "http://127.0.0.1:${novnc_port}/vnc.html?autoconnect=1&resize=scale"
+  append_env_default "XY_MANUAL_SLIDER_TAKEOVER_TIMEOUT" "450"
+}
+
+resolve_vnc_password_path() {
+  local configured_path
+  configured_path="$(read_env_value VNC_PASSWORD_FILE)"
+  if [[ -z "$configured_path" ]]; then
+    configured_path="./secrets/vnc_password.txt"
+    append_env_default "VNC_PASSWORD_FILE" "$configured_path"
+  fi
+
+  case "$configured_path" in
+    /*) VNC_PASSWORD_PATH="$configured_path" ;;
+    ./*) VNC_PASSWORD_PATH="$INSTALL_DIR/${configured_path#./}" ;;
+    *) VNC_PASSWORD_PATH="$INSTALL_DIR/$configured_path" ;;
+  esac
+}
+
+ensure_vnc_password() {
+  local password_directory temporary password
+  resolve_vnc_password_path
+  password_directory="$(dirname "$VNC_PASSWORD_PATH")"
+  mkdir -p "$password_directory"
+  chmod 0700 "$password_directory"
+
+  if [[ -s "$VNC_PASSWORD_PATH" ]]; then
+    chmod 0600 "$VNC_PASSWORD_PATH"
+    return
+  fi
+
+  temporary="$(mktemp "$password_directory/.vnc_password.tmp.XXXXXX")"
+  if command -v openssl >/dev/null 2>&1; then
+    password="$(openssl rand -base64 18 | tr -d '\r\n')"
+  else
+    password="$(LC_ALL=C od -An -N18 -tx1 /dev/urandom | tr -d '[:space:]')"
+  fi
+  [[ ${#password} -ge 8 ]] || fail "noVNC 随机密码生成失败。"
+  (umask 077; printf '%s\n' "$password" > "$temporary")
+  chmod 0600 "$temporary"
+  mv -f "$temporary" "$VNC_PASSWORD_PATH"
+}
+
 configure_app_url() {
   APP_PORT="$(read_env_value APP_PORT)"
   [[ "$APP_PORT" =~ ^[0-9]+$ ]] || fail ".env 中的 APP_PORT 配置无效。"
@@ -220,11 +284,19 @@ configure_app_url() {
   APP_URL="http://127.0.0.1:$APP_PORT"
 }
 
+configure_vnc_access() {
+  NOVNC_PORT_VALUE="$(read_env_value NOVNC_PORT)"
+  [[ "$NOVNC_PORT_VALUE" =~ ^[0-9]+$ ]] || fail ".env 中的 NOVNC_PORT 配置无效。"
+  (( NOVNC_PORT_VALUE >= 1 && NOVNC_PORT_VALUE <= 65535 )) || fail ".env 中的 NOVNC_PORT 超出有效范围。"
+  NOVNC_URL="http://127.0.0.1:$NOVNC_PORT_VALUE/vnc.html?autoconnect=1&resize=scale"
+}
+
 compose() {
   docker compose \
     --project-directory "$INSTALL_DIR" \
     --env-file "$ENV_FILE" \
     -f "$COMPOSE_FILE" \
+    -f "$VNC_COMPOSE_FILE" \
     "$@"
 }
 
@@ -274,10 +346,27 @@ show_access_info() {
   printf '  sudo lazyfish-assistant logs     查看日志\n'
 }
 
+show_vnc_access() {
+  local password
+  password="$(tr -d '\r\n' < "$VNC_PASSWORD_PATH")"
+  printf '\n============================================================\n'
+  printf '需要人工处理滑块时，请使用 noVNC 容器浏览器\n'
+  printf 'noVNC 入口：%s\n' "$NOVNC_URL"
+  printf 'noVNC 密码：%s\n' "$password"
+  printf '先在您自己的电脑执行 SSH 隧道命令：\n'
+  printf '  ssh -L %s:127.0.0.1:%s <SSH用户>@<服务器公网IP>\n' "$NOVNC_PORT_VALUE" "$NOVNC_PORT_VALUE"
+  printf '保持 SSH 窗口打开，再访问上面的 noVNC 入口。\n'
+  printf '底层 VNC 5900 不发布，noVNC 6080 只绑定服务器本机；请勿在安全组中对公网放行。\n'
+  printf '============================================================\n'
+}
+
 deploy() {
   download_runtime_files
   ensure_env
+  migrate_vnc_env_defaults
+  ensure_vnc_password
   configure_app_url
+  configure_vnc_access
   info "正在拉取最新稳定版本，首次下载可能需要几分钟..."
   compose pull lazyfish-assistant
   info "正在启动服务..."
@@ -286,11 +375,15 @@ deploy() {
   compose ps
   show_initial_password
   show_access_info
+  show_vnc_access
 }
 
 require_existing_install() {
-  [[ -f "$ENV_FILE" && -f "$COMPOSE_FILE" ]] || fail "尚未安装，请先执行官网的一句话安装命令。"
+  [[ -f "$ENV_FILE" && -f "$COMPOSE_FILE" && -f "$VNC_COMPOSE_FILE" ]] || fail "尚未安装或部署配置不完整，请先执行官网的一句话安装命令。"
+  migrate_vnc_env_defaults
+  ensure_vnc_password
   configure_app_url
+  configure_vnc_access
 }
 
 main() {
@@ -311,6 +404,7 @@ main() {
       compose ps
       show_initial_password
       show_access_info
+      show_vnc_access
       ;;
     stop)
       require_existing_install
