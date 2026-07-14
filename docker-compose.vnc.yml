@@ -1,0 +1,18 @@
+services:
+  lazyfish-assistant:
+    environment:
+      USE_XVFB: "true"
+      ENABLE_HEADFUL: "true"
+      ENABLE_VNC: "true"
+      VNC_PASSWORD_FILE: /run/secrets/vnc_password
+      MANUAL_VERIFICATION_URL: ${MANUAL_VERIFICATION_URL:-http://127.0.0.1:6080/vnc.html?autoconnect=1&resize=scale}
+      XY_MANUAL_SLIDER_TAKEOVER_TIMEOUT: ${XY_MANUAL_SLIDER_TAKEOVER_TIMEOUT:-450}
+    ports:
+      - "127.0.0.1:${NOVNC_PORT:-6080}:6080"
+    secrets:
+      - source: vnc_password
+        target: vnc_password
+
+secrets:
+  vnc_password:
+    file: ${VNC_PASSWORD_FILE:-./secrets/vnc_password.txt}

@@ -8,6 +8,7 @@ on:
       - ".env.example"
       - ".gitattributes"
       - "docker-compose.yml"
+      - "docker-compose.vnc.yml"
       - "global_config.yml"
       - "scripts/**"
       - "*.bat"
@@ -72,6 +73,11 @@ jobs:
           bash -n scripts/build-deployment-kits.sh
           bash -n ./*.command
           python3 -m py_compile scripts/create-deployment-zip.py
+          grep -q '127.0.0.1:${NOVNC_PORT:-6080}:6080' docker-compose.vnc.yml
+          if grep -q ':5900' docker-compose.vnc.yml; then
+            echo "Raw VNC port 5900 must not be published" >&2
+            exit 1
+          fi
           if grep -R -n -E 'docker compose down -v|compose down -v|volume rm' \
               scripts ./*.bat ./*.command; then
             echo "Destructive Docker command found" >&2
@@ -80,7 +86,9 @@ jobs:
 
       - name: Build Windows and macOS ZIP files
         shell: bash
-        run: scripts/build-deployment-kits.sh dist
+        run: |
+          scripts/build-deployment-kits.sh dist
+          python3 scripts/test-deployment-kits.py dist
 
       - name: Publish stable download links
         env:

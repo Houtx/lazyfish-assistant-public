@@ -3,9 +3,12 @@ set -Eeuo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 COMPOSE_FILE="$ROOT_DIR/docker-compose.yml"
+VNC_COMPOSE_FILE="$ROOT_DIR/docker-compose.vnc.yml"
 ENV_FILE="$ROOT_DIR/.env"
 ACTION="${1:-deploy}"
 APP_URL=""
+NOVNC_URL=""
+VNC_PASSWORD_PATH=""
 
 info() {
   printf '\n[%s] %s\n' "懒鱼助手" "$1"
@@ -87,13 +90,83 @@ ensure_config() {
   fi
 }
 
+read_env_value() {
+  local key="$1"
+  awk -F= -v key="$key" 'index($0, key "=") == 1 {sub(/^[^=]*=/, ""); gsub(/\r$/, ""); print; exit}' "$ENV_FILE"
+}
+
+append_env_default() {
+  local key="$1" value="$2"
+  if awk -F= -v key="$key" 'index($0, key "=") == 1 {found = 1; exit} END {exit !found}' "$ENV_FILE"; then
+    return
+  fi
+  printf '\n%s=%s\n' "$key" "$value" >> "$ENV_FILE"
+  chmod 0600 "$ENV_FILE"
+}
+
+migrate_vnc_env_defaults() {
+  local novnc_port
+  append_env_default "VNC_PASSWORD_FILE" "./secrets/vnc_password.txt"
+  append_env_default "NOVNC_PORT" "6080"
+  novnc_port="$(read_env_value NOVNC_PORT)"
+  append_env_default \
+    "MANUAL_VERIFICATION_URL" \
+    "http://127.0.0.1:${novnc_port}/vnc.html?autoconnect=1&resize=scale"
+  append_env_default "XY_MANUAL_SLIDER_TAKEOVER_TIMEOUT" "450"
+}
+
+resolve_vnc_password_path() {
+  local configured_path
+  configured_path="$(read_env_value VNC_PASSWORD_FILE)"
+  if [[ -z "$configured_path" ]]; then
+    configured_path="./secrets/vnc_password.txt"
+    append_env_default "VNC_PASSWORD_FILE" "$configured_path"
+  fi
+  case "$configured_path" in
+    /*) VNC_PASSWORD_PATH="$configured_path" ;;
+    ./*) VNC_PASSWORD_PATH="$ROOT_DIR/${configured_path#./}" ;;
+    *) VNC_PASSWORD_PATH="$ROOT_DIR/$configured_path" ;;
+  esac
+}
+
+ensure_vnc_password() {
+  local password_directory temporary password
+  resolve_vnc_password_path
+  password_directory="$(dirname "$VNC_PASSWORD_PATH")"
+  mkdir -p "$password_directory"
+  chmod 0700 "$password_directory"
+
+  if [[ -s "$VNC_PASSWORD_PATH" ]]; then
+    chmod 0600 "$VNC_PASSWORD_PATH"
+    return
+  fi
+
+  temporary="$(mktemp "$password_directory/.vnc_password.tmp.XXXXXX")"
+  if command -v openssl >/dev/null 2>&1; then
+    password="$(openssl rand -base64 18 | tr -d '\r\n')"
+  else
+    password="$(LC_ALL=C od -An -N18 -tx1 /dev/urandom | tr -d '[:space:]')"
+  fi
+  [[ ${#password} -ge 8 ]] || fail "noVNC 随机密码生成失败。"
+  (umask 077; printf '%s\n' "$password" > "$temporary")
+  chmod 0600 "$temporary"
+  mv -f "$temporary" "$VNC_PASSWORD_PATH"
+}
+
 configure_app_url() {
   local port
-  port="$(awk -F= '/^APP_PORT=/ { gsub(/\r/, "", $2); print $2; exit }' "$ENV_FILE")"
+  port="$(read_env_value APP_PORT)"
   if [[ ! "$port" =~ ^[0-9]+$ ]]; then
     fail ".env 中的 APP_PORT 配置无效。"
   fi
   APP_URL="http://127.0.0.1:$port"
+}
+
+configure_vnc_access() {
+  local port
+  port="$(read_env_value NOVNC_PORT)"
+  [[ "$port" =~ ^[0-9]+$ ]] || fail ".env 中的 NOVNC_PORT 配置无效。"
+  NOVNC_URL="http://127.0.0.1:$port/vnc.html?autoconnect=1&resize=scale"
 }
 
 open_app() {
@@ -107,6 +180,7 @@ compose() {
     --project-directory "$ROOT_DIR" \
     --env-file "$ENV_FILE" \
     -f "$COMPOSE_FILE" \
+    -f "$VNC_COMPOSE_FILE" \
     "$@"
 }
 
@@ -132,6 +206,17 @@ show_initial_password() {
   fi
 }
 
+show_vnc_access() {
+  local password
+  password="$(tr -d '\r\n' < "$VNC_PASSWORD_PATH")"
+  printf '\n============================================================\n'
+  printf '需要人工处理滑块时，请使用 noVNC 容器浏览器\n'
+  printf 'noVNC 入口：%s\n' "$NOVNC_URL"
+  printf 'noVNC 密码：%s\n' "$password"
+  printf '底层 VNC 端口不发布，noVNC 仅绑定本机，不会对局域网或公网开放。\n'
+  printf '============================================================\n'
+}
+
 deploy() {
   info "正在拉取最新稳定版本，首次下载可能需要几分钟..."
   compose pull lazyfish-assistant
@@ -141,6 +226,7 @@ deploy() {
   compose ps
   show_initial_password
   info "部署完成，访问地址：$APP_URL"
+  show_vnc_access
   open_app
 }
 
@@ -150,6 +236,7 @@ start_app() {
   wait_for_app
   compose ps
   show_initial_password
+  show_vnc_access
   open_app
 }
 
@@ -163,7 +250,10 @@ find_docker
 wait_for_docker
 check_compose
 ensure_config
+migrate_vnc_env_defaults
+ensure_vnc_password
 configure_app_url
+configure_vnc_access
 
 case "$ACTION" in
   deploy) deploy ;;

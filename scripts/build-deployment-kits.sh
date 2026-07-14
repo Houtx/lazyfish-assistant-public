@@ -15,6 +15,7 @@ for target in "$WINDOWS_DIR" "$MACOS_DIR"; do
   cp \
     "$ROOT_DIR/.env.example" \
     "$ROOT_DIR/docker-compose.yml" \
+    "$ROOT_DIR/docker-compose.vnc.yml" \
     "$ROOT_DIR/global_config.yml" \
     "$ROOT_DIR/客户使用说明.txt" \
     "$target/"
