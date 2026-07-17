@@ -69,6 +69,7 @@ jobs:
           set -euo pipefail
           bash -n scripts/install-linux.sh
           bash scripts/test-install-linux.sh
+          sudo bash scripts/test-install-linux.sh
           bash -n scripts/lazyfish-macos.sh
           bash -n scripts/build-deployment-kits.sh
           bash -n ./*.command

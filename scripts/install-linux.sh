@@ -10,6 +10,8 @@ readonly COMMAND_PATH="${LAZYFISH_COMMAND_PATH:-/usr/local/bin/lazyfish-assistan
 readonly REPOSITORY="Houtx/lazyfish-assistant-public"
 readonly BRANCH="main"
 readonly ACTION="${1:-deploy}"
+readonly APP_UID="10001"
+readonly APP_GID="10001"
 
 APP_PORT=""
 APP_URL=""
@@ -253,6 +255,13 @@ resolve_vnc_password_path() {
   esac
 }
 
+secure_vnc_password_file() {
+  local password_path="$1"
+  # Native Linux Compose file secrets preserve the host file owner.
+  chown "$APP_UID:$APP_GID" "$password_path"
+  chmod 0600 "$password_path"
+}
+
 ensure_vnc_password() {
   local password_directory temporary password
   resolve_vnc_password_path
@@ -261,7 +270,7 @@ ensure_vnc_password() {
   chmod 0700 "$password_directory"
 
   if [[ -s "$VNC_PASSWORD_PATH" ]]; then
-    chmod 0600 "$VNC_PASSWORD_PATH"
+    secure_vnc_password_file "$VNC_PASSWORD_PATH"
     return
   fi
 
@@ -273,7 +282,7 @@ ensure_vnc_password() {
   fi
   [[ ${#password} -ge 8 ]] || fail "noVNC 随机密码生成失败。"
   (umask 077; printf '%s\n' "$password" > "$temporary")
-  chmod 0600 "$temporary"
+  secure_vnc_password_file "$temporary"
   mv -f "$temporary" "$VNC_PASSWORD_PATH"
 }
 
