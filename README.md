@@ -1,6 +1,6 @@
 # 懒鱼助手
 
-懒鱼助手是面向二手电商卖家的自托管运营管理工具，支持 Windows、macOS 和 Linux 云服务器。本仓库提供公开 Docker 镜像、一键部署工具、版本更新和对应源码获取说明。当前稳定版本为 `2.1.5`。
+懒鱼助手是面向二手电商卖家的自托管运营管理工具，支持 Windows、macOS 和 Linux 云服务器。本仓库提供公开 Docker 镜像、一键部署工具、版本更新和对应源码获取说明。当前稳定版本为 `2.1.6`。
 
 [产品官网](https://lazyfish.haoyunqiankun.com/) · [Linux 一句话安装](#linux-云服务器一句话安装) · [Windows 一键部署包](https://github.com/Houtx/lazyfish-assistant-public/releases/download/installer-latest/lazyfish-assistant-windows.zip) · [macOS 一键部署包](https://github.com/Houtx/lazyfish-assistant-public/releases/download/installer-latest/lazyfish-assistant-macos.zip) · [获取对应源码](SOURCE.md)
 
